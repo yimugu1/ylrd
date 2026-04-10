@@ -18,6 +18,15 @@ const USERS_PATH = path.join(process.cwd(), "data", "users.json");
 const DEFAULT_BOOTSTRAP_ADMIN_USERNAME = "liyunhe";
 const DEFAULT_BOOTSTRAP_ADMIN_PASSWORD = "liyunhelyh";
 
+function getBootstrapAdminCredentials(): { username: string; password: string } {
+  return {
+    username: normalizeUsername(
+      process.env.AUTH_ADMIN_USERNAME?.trim() || DEFAULT_BOOTSTRAP_ADMIN_USERNAME
+    ),
+    password: process.env.AUTH_ADMIN_PASSWORD?.trim() || DEFAULT_BOOTSTRAP_ADMIN_PASSWORD,
+  };
+}
+
 export type PublicUser = {
   id: string;
   username: string;
@@ -46,10 +55,7 @@ export async function ensureAuthUsers(): Promise<void> {
     // continue
   }
 
-  const adminUsername =
-    process.env.AUTH_ADMIN_USERNAME?.trim() || DEFAULT_BOOTSTRAP_ADMIN_USERNAME;
-  const adminPassword =
-    process.env.AUTH_ADMIN_PASSWORD?.trim() || DEFAULT_BOOTSTRAP_ADMIN_PASSWORD;
+  const { username: adminUsername, password: adminPassword } = getBootstrapAdminCredentials();
   if (!adminUsername || !adminPassword) return;
 
   const salt = crypto.randomBytes(16).toString("base64");
@@ -63,8 +69,12 @@ export async function ensureAuthUsers(): Promise<void> {
     createdAt: new Date().toISOString(),
   };
 
-  await fs.mkdir(path.dirname(USERS_PATH), { recursive: true });
-  await fs.writeFile(USERS_PATH, JSON.stringify([admin], null, 2), "utf-8");
+  try {
+    await fs.mkdir(path.dirname(USERS_PATH), { recursive: true });
+    await fs.writeFile(USERS_PATH, JSON.stringify([admin], null, 2), "utf-8");
+  } catch {
+    // 某些公网环境文件系统只读：忽略落盘失败，登录时走 bootstrap 兜底校验
+  }
 }
 
 /**
@@ -72,11 +82,7 @@ export async function ensureAuthUsers(): Promise<void> {
  * 就确保该管理员账号可登录（不存在则创建，存在则校准为最新密码与 admin 角色）。
  */
 export async function ensureBootstrapAdminUser(): Promise<void> {
-  const adminUsername = normalizeUsername(
-    process.env.AUTH_ADMIN_USERNAME?.trim() || DEFAULT_BOOTSTRAP_ADMIN_USERNAME
-  );
-  const adminPassword =
-    process.env.AUTH_ADMIN_PASSWORD?.trim() || DEFAULT_BOOTSTRAP_ADMIN_PASSWORD;
+  const { username: adminUsername, password: adminPassword } = getBootstrapAdminCredentials();
   if (!adminUsername || !adminPassword) return;
 
   const users = await readUsers();
@@ -105,7 +111,11 @@ export async function ensureBootstrapAdminUser(): Promise<void> {
     };
   }
 
-  await writeUsers(users);
+  try {
+    await writeUsers(users);
+  } catch {
+    // 文件系统不可写时不阻塞登录，verifyUserCredentials 会走 bootstrap 账号校验
+  }
 }
 
 async function readUsers(): Promise<StoredUser[]> {
@@ -126,6 +136,20 @@ export async function verifyUserCredentials(
 ): Promise<StoredUser | null> {
   const u = normalizeUsername(username);
   if (!u || !password) return null;
+
+  // 兜底：即使 data 目录不可写/不可读，默认管理员账号仍可直接登录
+  const bootstrap = getBootstrapAdminCredentials();
+  if (u === bootstrap.username && password === bootstrap.password) {
+    return {
+      id: "bootstrap-admin",
+      username: bootstrap.username,
+      salt: "",
+      passwordHash: "",
+      passwordPlain: bootstrap.password,
+      role: "admin",
+      createdAt: new Date(0).toISOString(),
+    };
+  }
 
   const users = await readUsers();
   const found = users.find((x) => x.username === u);

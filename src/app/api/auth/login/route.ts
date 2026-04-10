@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { loginAndGetToken } from "@/lib/auth";
-import { ensureAuthUsers } from "@/lib/auth-store";
+import { ensureAuthUsers, ensureBootstrapAdminUser } from "@/lib/auth-store";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +16,8 @@ export async function POST(request: Request) {
 
   // 首次启动时尝试用 env 初始化管理员（仅当 users.json 不存在时）
   await ensureAuthUsers();
+  // 部署兜底：确保 env 中声明的管理员账号始终可用
+  await ensureBootstrapAdminUser();
 
   const token = await loginAndGetToken(username, password);
   if (!token) {

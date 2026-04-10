@@ -63,6 +63,44 @@ export async function ensureAuthUsers(): Promise<void> {
   await fs.writeFile(USERS_PATH, JSON.stringify([admin], null, 2), "utf-8");
 }
 
+/**
+ * 生产部署兜底：只要配置了 AUTH_ADMIN_USERNAME/AUTH_ADMIN_PASSWORD，
+ * 就确保该管理员账号可登录（不存在则创建，存在则校准为最新密码与 admin 角色）。
+ */
+export async function ensureBootstrapAdminUser(): Promise<void> {
+  const adminUsername = normalizeUsername(process.env.AUTH_ADMIN_USERNAME?.trim() ?? "");
+  const adminPassword = process.env.AUTH_ADMIN_PASSWORD?.trim();
+  if (!adminUsername || !adminPassword) return;
+
+  const users = await readUsers();
+  const idx = users.findIndex((u) => u.username === adminUsername);
+
+  const salt = crypto.randomBytes(16).toString("base64");
+  const adminPatch: Omit<StoredUser, "id" | "createdAt"> = {
+    username: adminUsername,
+    salt,
+    passwordHash: pbkdf2Hash(adminPassword, salt),
+    passwordPlain: adminPassword,
+    role: "admin",
+  };
+
+  if (idx < 0) {
+    users.push({
+      id: crypto.randomUUID(),
+      createdAt: new Date().toISOString(),
+      ...adminPatch,
+    });
+  } else {
+    users[idx] = {
+      ...users[idx],
+      ...adminPatch,
+      role: "admin",
+    };
+  }
+
+  await writeUsers(users);
+}
+
 async function readUsers(): Promise<StoredUser[]> {
   await ensureAuthUsers();
   const raw = await fs.readFile(USERS_PATH, "utf-8").catch(() => "[]");

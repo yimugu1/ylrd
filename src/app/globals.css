@@ -1,0 +1,30 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #0c0f14;
+  --foreground: #e8eaed;
+  --accent: #22d3ee;
+  --card: #131820;
+  --muted: #71717a;
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family:
+    "Segoe UI",
+    "Microsoft YaHei",
+    "PingFang SC",
+    "Noto Sans SC",
+    ui-sans-serif,
+    system-ui,
+    sans-serif;
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}

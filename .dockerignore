@@ -1,0 +1,10 @@
+node_modules
+.next
+.git
+.env*.local
+npm-debug.log*
+README.md
+*.md
+data/app.json
+data/secrets.json
+data/users.json

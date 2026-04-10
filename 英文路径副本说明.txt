@@ -1,0 +1,2 @@
+可复制到 C:\Users\PC\daima-app 使用纯英文路径开发（已有一份完整副本）。
+双击 dev.cmd 或执行：npm run clean && npm run dev

@@ -1,0 +1,13 @@
+# https://render.com — Blueprint 部署；免费实例磁盘不持久，重启可能丢 data，生产建议付费磁盘或换 Railway 卷
+services:
+  - type: web
+    name: daima
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    plan: starter
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: HOTSPOTS_PUBLIC
+        value: "1"

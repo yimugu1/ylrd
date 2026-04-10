@@ -1,0 +1,19 @@
+# 国内云服务器：Docker Compose 一键运行（公网请用前面 Nginx/宝塔 反代到 127.0.0.1:3000）
+#
+# 1. 复制 .env.example 为 .env 并填写密钥
+# 2. docker compose up -d --build
+#
+# 数据持久化：./data → /app/data
+services:
+  web:
+    build: .
+    restart: unless-stopped
+    ports:
+      # 仅本机可访问 3000，公网走 Nginx 443；若需临时直接暴露端口可改为 "3000:3000"
+      - "127.0.0.1:3000:3000"
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+    volumes:
+      - ./data:/app/data

@@ -1,0 +1,32 @@
+【热点库如何「自动」更新】
+
+一、先弄清现实限制
+  · 微博、抖音、小红书等「社媒热搜」没有免费、稳定、面向个人的全网开放 API。
+  · 合规途径一般是：平台官方数据产品、企业合作、或自建采集（需授权与合规评估）。
+  · 本项目热点库当前用「RSS 资讯源」聚合话题，近似全网热点，便于和脚本区做关键词匹配。
+  · 默认已含国内外科技与资讯类 RSS；可在 .env.local 里用 RSS_FEED_URLS 自行增删。
+
+二、本机每天自动拉一次（电脑要开机，且网站在跑）
+  1）平时用下面两种方式之一保持站点运行：
+     · 开发：npm run dev
+     · 生产模式：npm run build 然后 npm run start
+  2）在 .env.local 里设置（可选，建议）：
+     CRON_SECRET=你自己设一串密码
+     （若设置了，下面同步命令必须带同一密钥；脚本 sync-hotspots.cjs 会自动读 .env.local）
+  3）用「任务计划程序」每天定时执行（示例）：
+     程序：node
+     参数：C:\你的路径\daima\scripts\sync-hotspots.cjs
+     起始于：C:\你的路径\daima
+     或定时执行：npm run sync:hotspots（需保证 cmd 里能执行 npm）
+  4）到点后会请求：GET /api/cron/sync-hotspots
+     等价于你在项目目录执行：npm run sync:hotspots
+
+三、部署到公网后定时拉（Vercel 等）
+  · 把项目部署后，用云厂商的「Cron / 定时任务」去访问：
+    https://你的域名/api/cron/sync-hotspots
+  · Header：Authorization: Bearer 与服务器环境变量 CRON_SECRET 一致。
+
+四、想更接近「社媒」时可以怎么做
+  · 自建 RSSHub（https://github.com/DIYgod/RSSHub），在 RSS_FEED_URLS 里填你实例上的
+    微博热搜、知乎热榜等路由（请遵守各平台规则与实例负载）。
+  · 或采购第三方热点/舆情 API，再在项目里加新的同步模块（需开发对接）。

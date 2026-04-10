@@ -1,0 +1,8 @@
+# https://railway.app — New Project → Deploy from repo → 使用本 Dockerfile
+# 部署后在 Settings → Volumes 添加卷，Mount Path 填 /app/data（持久化用户与业务数据）
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+restartPolicyType = "on_failure"

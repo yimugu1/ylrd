@@ -119,7 +119,9 @@ export async function getMePublic(): Promise<{ user: AuthUser } | { error: strin
   const u = getAuthUserOrNull();
   if (!u) return { error: "Unauthorized" };
   const pub = await getUserPublic(u.username);
-  if (!pub) return { error: "User not found" };
+  // 在公网只读文件系统下，用户文件可能不可写/不可读；
+  // 只要 token 有效，就信任 token 内的身份信息避免“登录后又被踢回登录页”。
+  if (!pub) return { user: u };
   return { user: { id: pub.id, username: pub.username, role: pub.role } };
 }
 

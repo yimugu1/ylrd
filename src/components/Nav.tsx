@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 const links = [
@@ -10,7 +11,9 @@ const links = [
 ];
 
 export function Nav() {
+  const pathname = usePathname();
   const [role, setRole] = useState<"admin" | "user" | null>(null);
+  const isLoginPage = pathname?.startsWith("/login") ?? false;
 
   useEffect(() => {
     let alive = true;
@@ -36,6 +39,7 @@ export function Nav() {
   }, []);
 
   const navLinks = useMemo(() => {
+    if (!role) return [];
     if (role !== "admin") return links;
     return [
       ...links,
@@ -50,17 +54,19 @@ export function Nav() {
         <Link href="/" className="text-lg font-semibold tracking-tight text-cyan-400">
           引力内部热点脚本工作台
         </Link>
-        <nav className="flex flex-wrap gap-1 sm:gap-2">
-          {navLinks.map((l) => (
-            <Link
-              key={l.href}
-              href={l.href}
-              className="rounded-lg px-3 py-1.5 text-sm text-zinc-300 transition hover:bg-white/5 hover:text-white"
-            >
-              {l.label}
-            </Link>
-          ))}
-        </nav>
+        {!isLoginPage && (
+          <nav className="flex flex-wrap gap-1 sm:gap-2">
+            {navLinks.map((l) => (
+              <Link
+                key={l.href}
+                href={l.href}
+                className="rounded-lg px-3 py-1.5 text-sm text-zinc-300 transition hover:bg-white/5 hover:text-white"
+              >
+                {l.label}
+              </Link>
+            ))}
+          </nav>
+        )}
       </div>
     </header>
   );

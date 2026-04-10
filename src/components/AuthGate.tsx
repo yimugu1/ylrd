@@ -10,31 +10,39 @@ type MeRes =
 export function AuthGate({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+  const isLoginPath = pathname?.startsWith("/login") ?? false;
 
   const [ready, setReady] = useState(false);
   const [authed, setAuthed] = useState(false);
 
   useEffect(() => {
     if (!pathname) return;
-    if (pathname.startsWith("/login")) {
-      setReady(true);
-      setAuthed(true);
-      return;
-    }
 
     let alive = true;
     (async () => {
       try {
-        const r = await fetch("/api/auth/me", { credentials: "include" });
+        const r = await fetch("/api/auth/me", { credentials: "include", cache: "no-store" });
         const j = (await r.json()) as MeRes;
         if (!alive) return;
         if (r.ok && j.ok) {
           setAuthed(true);
+          if (isLoginPath) {
+            router.replace("/");
+            return;
+          }
         } else {
+          if (isLoginPath) {
+            setAuthed(true);
+            return;
+          }
           setAuthed(false);
         }
       } catch {
         if (!alive) return;
+        if (isLoginPath) {
+          setAuthed(true);
+          return;
+        }
         setAuthed(false);
       } finally {
         if (!alive) return;
@@ -44,21 +52,21 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     return () => {
       alive = false;
     };
-  }, [pathname]);
+  }, [isLoginPath, pathname, router]);
 
   useEffect(() => {
     if (!ready) return;
-    if (pathname.startsWith("/login")) return;
+    if (isLoginPath) return;
     if (authed) return;
     const next = encodeURIComponent(pathname);
     router.replace(`/login?next=${next}`);
-  }, [authed, pathname, ready, router]);
+  }, [authed, isLoginPath, pathname, ready, router]);
 
   if (!ready) {
     return <div className="text-zinc-500">加载中…</div>;
   }
 
-  if (!authed && !pathname.startsWith("/login")) return null;
+  if (!authed && !isLoginPath) return null;
   return <>{children}</>;
 }
 

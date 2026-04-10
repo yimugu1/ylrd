@@ -15,6 +15,8 @@ export type StoredUser = {
 };
 
 const USERS_PATH = path.join(process.cwd(), "data", "users.json");
+const DEFAULT_BOOTSTRAP_ADMIN_USERNAME = "liyunhe";
+const DEFAULT_BOOTSTRAP_ADMIN_PASSWORD = "liyunhelyh";
 
 export type PublicUser = {
   id: string;
@@ -44,8 +46,10 @@ export async function ensureAuthUsers(): Promise<void> {
     // continue
   }
 
-  const adminUsername = process.env.AUTH_ADMIN_USERNAME?.trim();
-  const adminPassword = process.env.AUTH_ADMIN_PASSWORD?.trim();
+  const adminUsername =
+    process.env.AUTH_ADMIN_USERNAME?.trim() || DEFAULT_BOOTSTRAP_ADMIN_USERNAME;
+  const adminPassword =
+    process.env.AUTH_ADMIN_PASSWORD?.trim() || DEFAULT_BOOTSTRAP_ADMIN_PASSWORD;
   if (!adminUsername || !adminPassword) return;
 
   const salt = crypto.randomBytes(16).toString("base64");
@@ -68,8 +72,11 @@ export async function ensureAuthUsers(): Promise<void> {
  * 就确保该管理员账号可登录（不存在则创建，存在则校准为最新密码与 admin 角色）。
  */
 export async function ensureBootstrapAdminUser(): Promise<void> {
-  const adminUsername = normalizeUsername(process.env.AUTH_ADMIN_USERNAME?.trim() ?? "");
-  const adminPassword = process.env.AUTH_ADMIN_PASSWORD?.trim();
+  const adminUsername = normalizeUsername(
+    process.env.AUTH_ADMIN_USERNAME?.trim() || DEFAULT_BOOTSTRAP_ADMIN_USERNAME
+  );
+  const adminPassword =
+    process.env.AUTH_ADMIN_PASSWORD?.trim() || DEFAULT_BOOTSTRAP_ADMIN_PASSWORD;
   if (!adminUsername || !adminPassword) return;
 
   const users = await readUsers();

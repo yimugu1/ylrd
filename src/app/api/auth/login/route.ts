@@ -14,10 +14,17 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: "参数错误" }, { status: 400 });
   }
 
-  // 首次启动时尝试用 env 初始化管理员（仅当 users.json 不存在时）
-  await ensureAuthUsers();
-  // 部署兜底：确保 env 中声明的管理员账号始终可用
-  await ensureBootstrapAdminUser();
+  try {
+    // 首次启动时尝试用 env 初始化管理员（仅当 users.json 不存在时）
+    await ensureAuthUsers();
+    // 部署兜底：确保 env 中声明的管理员账号始终可用
+    await ensureBootstrapAdminUser();
+  } catch {
+    return NextResponse.json(
+      { ok: false, error: "账号初始化失败，请检查服务端 data 目录写权限" },
+      { status: 500 }
+    );
+  }
 
   const token = await loginAndGetToken(username, password);
   if (!token) {

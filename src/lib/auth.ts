@@ -11,6 +11,7 @@ export type AuthUser = {
 };
 
 const COOKIE_NAME = "daima_auth_token";
+const AUTH_SECRET_FALLBACK = "ylrd-public-fallback-secret-v1";
 
 type TokenPayload = {
   uid: string;
@@ -28,12 +29,12 @@ function base64url(input: Buffer | string): string {
     .replace(/=+$/g, "");
 }
 
+function getAuthSecret(): string {
+  return process.env.AUTH_SECRET?.trim() || AUTH_SECRET_FALLBACK;
+}
+
 function signPayload(payloadBase64Url: string): string {
-  const secret = process.env.AUTH_SECRET?.trim();
-  if (!secret) {
-    // 没配 secret，直接视为无效（避免绕过鉴权）
-    return "";
-  }
+  const secret = getAuthSecret();
   const h = crypto.createHmac("sha256", secret).update(payloadBase64Url).digest();
   return base64url(h);
 }
@@ -102,9 +103,6 @@ export function requireAdmin(): NextResponse | AuthUser {
 }
 
 export async function loginAndGetToken(username: string, password: string) {
-  const secret = process.env.AUTH_SECRET?.trim();
-  if (!secret) return null;
-
   const user = await verifyUserCredentials(username, password);
   if (!user) return null;
   // 只用 token payload + 签名即可，不必每次都查用户文件

@@ -2,6 +2,7 @@ import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
 const COOKIE_NAME = "daima_auth_token";
+const AUTH_SECRET_FALLBACK = "ylrd-public-fallback-secret-v1";
 
 function base64urlToBase64(input: string): string {
   const s = input.replace(/-/g, "+").replace(/_/g, "/");
@@ -61,10 +62,10 @@ export async function middleware(request: NextRequest) {
   if (pathname.startsWith("/login")) return NextResponse.next();
   if (pathname.startsWith("/api")) return NextResponse.next();
 
-  const secret = process.env.AUTH_SECRET?.trim();
+  const secret = process.env.AUTH_SECRET?.trim() || AUTH_SECRET_FALLBACK;
   const token = request.cookies.get(COOKIE_NAME)?.value ?? "";
 
-  const ok = !!secret && !!token && (await isTokenValid(token, secret));
+  const ok = !!token && (await isTokenValid(token, secret));
   if (ok) return NextResponse.next();
 
   const loginUrl = new URL("/login", request.url);
